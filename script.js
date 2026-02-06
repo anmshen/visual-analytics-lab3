@@ -49,7 +49,7 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         .join("option")
         .attr("value", (d) => d)
         .text((d) => d);
-    //TODO: do the same for yAxisDropdown DONE
+    //TODO: do the same for yAxisDropdown DONE test
     d3.select("#yAxisDropdown")
         .selectAll("option")
         .data(attrs)
