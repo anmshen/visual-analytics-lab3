@@ -42,14 +42,14 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
             console.log('inside listener');
             let currOption = event.target.value;
             console.log('currOption:', currOption);
-            draw_x_scatter(currOption); // ????
+            const new_x_scale = draw_x_scatter(currOption); // ????
         })
         .selectAll("option")
         .data(attrs)
         .join("option")
         .attr("value", (d) => d)
         .text((d) => d);
-    //TODO: do the same for yAxisDropdown DONE test
+    //TODO: do the same for yAxisDropdown DONE
     d3.select("#yAxisDropdown")
         .selectAll("option")
         .data(attrs)
@@ -61,19 +61,23 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     // TODO: Implement the x-scale domain and range for the x-axis
 
     function draw_x_scatter (option) {
-        return d3
+        // return d3
+        // .scaleLinear()
+        // .domain(d3.extent(data, (d) => d[option]))
+        // .range([0, width]);
+        let xScale_scatter = d3
         .scaleLinear()
-        .domain(d3.extent(data, (d) => d[option]))
+        .domain(d3.extent(data, (d) => d["option"]))
         .range([0, width]);
+        
+        return xScale_scatter
     }
-    
+
     let xScale_scatter = d3
         .scaleLinear()
-        //TODO: make this depend on the dropdown option
+        //TODO: make this depend on the dropdown option DONE
         .domain(d3.extent(data, (d) => d["sepal.length"]))
         .range([0, width]);
-
-        // var scale = d3.scale.linear().domain([33, 64]).range([0, 600]);
 
     // TODO: Create a scale for the y-axis that maps the y axis domain to the range of the canvas height
     // Hint: You can create variables to represent the min and max of the y-axis values
