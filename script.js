@@ -12,7 +12,7 @@ const svg_scatter = d3
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    .style("background", "#eee")
+    .style("background", "#ffffff")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -23,7 +23,7 @@ const svg_bar = d3
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    .style("background", "#eee")
+    .style("background", "#ffffff")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -39,18 +39,20 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
 
     d3.select("#xAxisDropdown")
         .on('change', (event) => {
-            console.log('inside listener');
             let currOption = event.target.value;
-            console.log('currOption:', currOption);
-            const new_x_scale = draw_x_scatter(currOption); // ????
+            draw_x_scatter(currOption);
         })
         .selectAll("option")
         .data(attrs)
         .join("option")
         .attr("value", (d) => d)
         .text((d) => d);
-    //TODO: do the same for yAxisDropdown DONE
+    
     d3.select("#yAxisDropdown")
+        .on('change', (event) => {
+            let currOption = event.target.value;
+            draw_y_scatter(currOption);
+        })
         .selectAll("option")
         .data(attrs)
         .join("option")
@@ -60,32 +62,28 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     // TODO: Create a scale for the x-axis that maps the x axis domain to the range of the canvas width
     // TODO: Implement the x-scale domain and range for the x-axis
 
-    function draw_x_scatter (option) {
-        // return d3
-        // .scaleLinear()
-        // .domain(d3.extent(data, (d) => d[option]))
-        // .range([0, width]);
-        let xScale_scatter = d3
-        .scaleLinear()
-        .domain(d3.extent(data, (d) => d["option"]))
-        .range([0, width]);
-        
-        return xScale_scatter
-    }
+    const x_padding = 0.5;
+    const minX = d3.min(data, (d) => d["sepal.length"]);
+    const maxX = d3.max(data, (d) => d["sepal.length"]);
 
-    let xScale_scatter = d3
+    let xScale_scatter_init = d3
         .scaleLinear()
-        //TODO: make this depend on the dropdown option DONE
-        .domain(d3.extent(data, (d) => d["sepal.length"]))
+        //TODO [PART 2]: make this depend on the dropdown option 
+        .domain([minX - x_padding, maxX + x_padding])
         .range([0, width]);
 
     // TODO: Create a scale for the y-axis that maps the y axis domain to the range of the canvas height
     // Hint: You can create variables to represent the min and max of the y-axis values
 
-    let yScale_scatter = d3
+    const y_padding = 0.5;
+    const minY = d3.min(data, (d) => d["petal.length"]);
+    const maxY = d3.max(data, (d) => d["petal.length"]);
+    
+    let yScale_scatter_init = d3
         .scaleLinear()
         // TODO: Fill these out
         // .domain()
+        .domain([minY - y_padding, maxY + y_padding])
         .range([height, 0]);
 
     // TODO: Append the scaled x-axis tick marks to the svg
@@ -94,69 +92,125 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         .attr("class", "xAxis")
         .style("font", "11px monaco")
         .attr("transform", `translate(0, ${height})`)
-        // TODO: Explain the following line of code in a comment
-        .call(d3.axisBottom(xScale_scatter));
+        // it creates a bottom axis with the scaled x-axis tick marks that we defined above
+        .call(d3.axisBottom(xScale_scatter_init));
 
     // TODO: Append the scaled y-axis tick marks to the svg
     svg_scatter
         .append("g")
         .attr("class", "yAxis")
         .style("font", "11px monaco")
-        .call(d3.axisLeft(yScale_scatter));
+        .call(d3.axisLeft(yScale_scatter_init));
+
+    var color = d3.scaleOrdinal()
+        .domain(["setosa", "versicolor", "virginica" ])
+        .range([ "rgb(39, 84, 143)", "rgb(116, 204, 223)", "rgb(143, 216, 114)"])
 
     // TODO: Draw scatter plot dots here. Finish the rest of this
     let dots = svg_scatter
         .append("g")
         .selectAll(".dot")
-        //TODO: feed real data here
-        .data([
-            {"sepal.length": 6.0, x: 100, y: 100, color: "blue"},
-            {"sepal.length": 5.0, x: 100, y: 180, color: "orange"},
-        ])
+        .data(data)
         .join("circle")
         .attr("class", "dot")
-        // TODO: Fix these, find position of dots using appropriate scale
-        .attr("cx", (d) => xScale_scatter(d["sepal.length"]))
-        .attr("cy", (d) => d.y)
-        .attr("r", 10)
-        .attr("stroke", "white")
-        .attr("stroke-width", 2)
-        //TODO: color points by iris variety using a categorical color map
-        .style("fill", (d) => d.color);
+        .attr("cx", (d) => xScale_scatter_init(d["sepal.length"]))
+        .attr("cy", (d) => yScale_scatter_init(d["petal.length"]))
+        .attr("r", 5)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .style("fill", (d) => color(d["variety"]));
 
-    //TODO: add tooltip here
+    // TODO: add tooltip here
     dots.on("mouseover", (event, d) => {
-        console.log("Moused over a dot. \nEvent:", event, "D:", d);
+        console.log("Moused over a dot. \nEvent:", event, "D:", d)
+        // .append("div")
+        // .style("opacity", 0)
+        // .attr("class", "tooltip")
+        // .style("background-color", "white")
+        // .style("border", "solid")
+        // .style("border-width", "1px")
+        // .style("border-radius", "5px")
+        // .style("padding", "10px");
     });
+
+    function draw_y_scatter (option) {
+        const y_padding = 0.5;
+        const minY = d3.min(data, (d) => d[option]);
+        const maxY = d3.max(data, (d) => d[option]);
+
+        // update scale
+        let yScale_scatter = d3
+            .scaleLinear()
+            .domain([minY - y_padding, maxY + y_padding])
+            .range([height, 0]);
+        
+        // update the x axis
+        d3.select('.yAxis')
+            .transition()
+            .duration(1000)
+            .call(d3.axisLeft(yScale_scatter).tickSize(-width).tickPadding(10))
+
+        // redraw the dots???
+        dots.transition().duration(1000).attr("cy", (d) => yScale_scatter(d[option]));
+
+        // update the gridlines
+        d3.selectAll(".yAxis line")
+            .attr("stroke", "#c5c5c5")
+            .attr("stroke-dasharray", "2");
+    }
+
+    function draw_x_scatter (option) {
+        const x_padding = 0.5;
+        const minX = d3.min(data, (d) => d[option]);
+        const maxX = d3.max(data, (d) => d[option]);
+
+        // update scale
+        let xScale_scatter = d3
+            .scaleLinear()
+            .domain([minX - x_padding, maxX + x_padding])
+            .range([0, width]);
+        
+        // update the x axis
+        d3.select('.xAxis')
+            .transition()
+            .duration(1000)
+            .call(d3.axisBottom(xScale_scatter).tickSize(-height))
+
+        // redraw the dots???
+        dots.transition().duration(1000).attr("cx", (d) => xScale_scatter(d[option]));
+
+        // update the gridlines
+        d3.selectAll(".xAxis line")
+            .attr("stroke", "#c5c5c5")
+            .attr("stroke-dasharray", "2");
+    }
 
     // TODO: X axis label
     svg_scatter
         .append("text")
         .attr("text-anchor", "end")
-        .attr("x", margin.left + width / 2)
+        .attr("x", margin.left + width / 2 + 120)
         .attr("y", height + 36)
         // TODO: Finish this...
-        .text("TODO x label");
+        .text("Sepal Length");
 
     // TODO: Y axis label
     svg_scatter
         .append("text")
         .attr("text-anchor", "end")
         .attr("transform", "rotate(-90)")
-        // .attr("y", ...)
-        // .attr("x", ...)
-        .text("TODO y label");
+        .attr("y", -margin.top - 3)
+        .text("Petal Length");
 
     // TODO: Chart title
     svg_scatter
         .append("text")
         .attr("text-anchor", "middle")
         .style("font-size", "16px")
-        .style("text-decoration", "underline");
-    // TODO: Finish these...
-    // .attr("x", ...)
-    // .attr("y", ...)
-    // .text(...);
+        .style("text-decoration", "underline")
+        .attr("x", margin.left + width / 3)
+        .text("Petal Length vs. Sepal Length");
+
 
     /********************************************************************** 
      TODO: Complete the bar chart tasks
@@ -172,9 +226,15 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         "sepal.length": d3.mean(data, (d) => d["sepal.length"]),
     });
     // TODO (optional): Add the remaining values to your array
-    average_data.push(0);
-    average_data.push(0);
-    average_data.push(0);
+    average_data.push({
+        "sepal.width": d3.mean(data, (d) => d["sepal.width"]),
+    });
+    average_data.push({
+        "petal.length": d3.mean(data, (d) => d["petal.length"]),
+    });
+    average_data.push({
+        "petal.width": d3.mean(data, (d) => d["petal.width"]),
+    });
 
     // Compute the maximum and minimum values from the average values to use for later
     let max_average = Object.values(average_data[0])[0];
@@ -188,10 +248,10 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     // Hint: the domain for X should be the attributes of the dataset
     // xDomain = ['sepal.length', ...]
     // then you can use 'xDomain' as input to .domain()
-    let xDomain = [];
+    let xDomain = ['sepal.length', 'sepal.width', 'petal.length', 'petal.width'];
     let xScale_bar = d3
         .scaleBand()
-        // .domain(...)
+        .domain(xDomain)
         .range([0, width])
         .padding(0.4);
 
@@ -200,6 +260,7 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         .append("g")
         .attr("class", "xAxis")
         .attr("transform", "translate(0," + height + ")")
+        .style("font", "11px monaco")
         .call(d3.axisBottom(xScale_bar));
     // ....
 
@@ -207,8 +268,9 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     let yScale_bar = d3
         .scaleLinear()
         // TODO: Fix this!
-        // .domain(...)
-        .range([height, 0]);
+        .domain([0, max_average + 0.5])
+        .range([height, 0])
+        // .padding(0.4);
 
     // TODO: Finish this
     svg_bar.append("g").attr("class", "yAxis").call(d3.axisLeft(yScale_bar));
@@ -218,9 +280,11 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     // Hint: Look at d3.scaleLinear()
     // let bar_color = d3.scaleLinear()...
     // Hint: What would the domain and range be?
-    let bar_color = d3.scaleLinear();
-    // .domain()
-    // .range()
+    let bar_color = d3.scaleLinear()
+        .domain([min_average, max_average])
+        .range(["rgb(255, 233, 233)", "rgb(205, 0, 0)"])
+        // .domain(d3.extent(average_data, function(d) { return d.value; }))
+        // .range('white', 'red');
 
     // TODO: Append bars to the bar chart with the appropriately scaled height
     // Hint: the data being used for the bar chart is the computed average values! Not the entire dataset
@@ -229,32 +293,60 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     svg_bar
         .selectAll(".bar")
         // TODO: Fix these
-        .data([
-            {x: 100, y: 100},
-            {x: 150, y: 200},
-            {x: 200, y: 180},
-        ])
+        .data(average_data)
         .join("rect")
-        .attr("x", (d) => d.x)
-        .attr("y", (d) => d.y)
+        .attr("x", (d) => xScale_bar(Object.keys(d)[0]))
+        .attr("y", (d) => yScale_bar(Object.values(d)[0]))
         .attr("width", 40)
-        .attr("height", 80)
-        .attr("fill", d3.schemeCategory10[0]);
+        .attr("height", (d) => height - yScale_bar(Object.values(d)[0]))
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("fill", (d) => bar_color(Object.values(d)[0]));
 
     // TODO: Append x-axis label
-    svg_bar.append("text"); // TODO: Fix this
+    svg_bar
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .attr("x", margin.left + width / 2 + 60)
+        .attr("y", height + 36)
+        .text("Attribute");
     // TODO: Append y-axis label
+    svg_bar
+        .append("text")
+        .attr("text-anchor", "end")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -margin.top - 3)
+        .text("Average");
     // TODO: Append bar chart title
+    svg_bar
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("text-decoration", "underline")
+        .attr("x", margin.left + width / 3)
+        .text("Average Values Per Attribute");
+    
     // TODO: Draw gridlines for both charts
 
     // Fix these (and maybe you need more...)
-    // d3.selectAll("g.yAxis g.tick")
-    // .append("line")
-    // .attr("class", "gridline")
-    // .attr("x1", ...)
-    // .attr("y1", ...)
-    // .attr("x2", ...)
-    // .attr("y2", ...)
-    // .attr("stroke", ...)
-    // .attr("stroke-dasharray","2")
+    d3.selectAll("g.yAxis g.tick")
+        .append("line")
+        .attr("class", "gridline")
+        .attr("x1", 0)
+        .attr("y1", 0)
+        .attr("x2", width)
+        .attr("y2", 0)
+        .attr("stroke", "#c5c5c5")
+        .attr("stroke-dasharray","2");
+
+    d3.selectAll("g.xAxis g.tick")
+        .append("line")
+        .attr("class", "gridline")
+        .attr("x1", 0)
+        .attr("y1", 0)
+        .attr("x2", 0)
+        .attr("y2", -height)
+        .attr("stroke", "#c5c5c5")
+        .attr("stroke-dasharray","2");
 });
