@@ -41,6 +41,7 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         .on('change', (event) => {
             let currOption = event.target.value;
             draw_x_scatter(currOption);
+            updateTitle();
         })
         .selectAll("option")
         .data(attrs)
@@ -52,6 +53,7 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         .on('change', (event) => {
             let currOption = event.target.value;
             draw_y_scatter(currOption);
+            updateTitle();
         })
         .selectAll("option")
         .data(attrs)
@@ -61,6 +63,9 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
 
     // TODO: Create a scale for the x-axis that maps the x axis domain to the range of the canvas width
     // TODO: Implement the x-scale domain and range for the x-axis
+
+    let currentX = "sepal.length";
+    let currentY = "petal.length";
 
     const x_padding = 0.5;
     const minX = d3.min(data, (d) => d["sepal.length"]);
@@ -85,6 +90,31 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         // .domain()
         .domain([minY - y_padding, maxY + y_padding])
         .range([height, 0]);
+
+    let xGrid = svg_scatter.append("g")
+        .attr("class", "xGrid");
+
+    let yGrid = svg_scatter.append("g")
+        .attr("class", "yGrid");
+
+    xGrid
+        .attr("transform", `translate(0, ${height})`)
+        .call(make_x_gridlines(xScale_scatter_init));
+
+    xGrid.selectAll(".tick line")
+        .attr("stroke", "#c5c5c5")
+        .attr("stroke-dasharray", "2");
+
+    xGrid.select(".domain").remove();
+
+    yGrid
+        .call(make_y_gridlines(yScale_scatter_init));
+
+    yGrid.selectAll(".tick line")
+        .attr("stroke", "#c5c5c5")
+        .attr("stroke-dasharray", "2");
+
+    yGrid.select(".domain").remove();
 
     // TODO: Append the scaled x-axis tick marks to the svg
     svg_scatter
@@ -148,15 +178,25 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         d3.select('.yAxis')
             .transition()
             .duration(1000)
-            .call(d3.axisLeft(yScale_scatter).tickSize(-width).tickPadding(10))
+            // .call(d3.axisLeft(yScale_scatter).tickSize(-width).tickPadding(10))
+            .call(d3.axisLeft(yScale_scatter));
+
+        // update the gridlines
+        yGrid
+            .transition()
+            .duration(1000)
+            .call(make_y_gridlines(yScale_scatter));
+        yGrid.select(".domain").remove();
+
+        yGrid.selectAll(".tick line")
+            .attr("stroke", "#c5c5c5")
+            .attr("stroke-dasharray", "2");
 
         // redraw the dots???
         dots.transition().duration(1000).attr("cy", (d) => yScale_scatter(d[option]));
 
-        // update the gridlines
-        d3.selectAll(".yAxis line")
-            .attr("stroke", "#c5c5c5")
-            .attr("stroke-dasharray", "2");
+        // update axis title
+        yLabel.text(option);
     }
 
     function draw_x_scatter (option) {
@@ -174,43 +214,78 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         d3.select('.xAxis')
             .transition()
             .duration(1000)
-            .call(d3.axisBottom(xScale_scatter).tickSize(-height))
+            // .call(d3.axisBottom(xScale_scatter).tickSize(-height))
+            .call(d3.axisBottom(xScale_scatter))
+
+        // update the gridlines
+        xGrid
+            .transition()
+            .duration(1000)
+            .attr("transform", `translate(0, ${height})`)
+            .call(make_x_gridlines(xScale_scatter));
+        xGrid.select(".domain").remove();
+
+        xGrid.selectAll(".tick line")
+            .attr("stroke", "#c5c5c5")
+            .attr("stroke-dasharray", "2");
 
         // redraw the dots???
         dots.transition().duration(1000).attr("cx", (d) => xScale_scatter(d[option]));
 
-        // update the gridlines
-        d3.selectAll(".xAxis line")
-            .attr("stroke", "#c5c5c5")
-            .attr("stroke-dasharray", "2");
+        // update axis title
+        xLabel.text(option);
+    }
+
+    function updateTitle() {
+        scatterTitle.text(`${currentY} vs. ${currentX}`);
+    }
+
+    function make_x_gridlines(scale) {
+        return d3.axisBottom(scale)
+            .tickSize(-height)
+            .tickFormat("");
+    }
+
+    function make_y_gridlines(scale) {
+        return d3.axisLeft(scale)
+            .tickSize(-width)
+            .tickFormat("");
     }
 
     // TODO: X axis label
-    svg_scatter
+    let xLabel = svg_scatter
         .append("text")
         .attr("text-anchor", "end")
         .attr("x", margin.left + width / 2 + 120)
         .attr("y", height + 36)
         // TODO: Finish this...
-        .text("Sepal Length");
+        .text(currentX);
 
     // TODO: Y axis label
-    svg_scatter
+    let yLabel = svg_scatter
         .append("text")
         .attr("text-anchor", "end")
         .attr("transform", "rotate(-90)")
         .attr("y", -margin.top - 3)
-        .text("Petal Length");
+        .text(currentY);
 
     // TODO: Chart title
-    svg_scatter
+    // svg_scatter
+    //     .append("text")
+    //     .attr("text-anchor", "middle")
+    //     .style("font-size", "16px")
+    //     .style("text-decoration", "underline")
+    //     .attr("x", margin.left + width / 3)
+    //     .text("Petal Length vs. Sepal Length");
+
+    let scatterTitle = svg_scatter
         .append("text")
+        .attr("class", "scatterTitle")
         .attr("text-anchor", "middle")
         .style("font-size", "16px")
         .style("text-decoration", "underline")
         .attr("x", margin.left + width / 3)
-        .text("Petal Length vs. Sepal Length");
-
+        .text(`${currentY} vs. ${currentX}`);
 
     /********************************************************************** 
      TODO: Complete the bar chart tasks
@@ -330,23 +405,23 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     // TODO: Draw gridlines for both charts
 
     // Fix these (and maybe you need more...)
-    d3.selectAll("g.yAxis g.tick")
-        .append("line")
-        .attr("class", "gridline")
-        .attr("x1", 0)
-        .attr("y1", 0)
-        .attr("x2", width)
-        .attr("y2", 0)
-        .attr("stroke", "#c5c5c5")
-        .attr("stroke-dasharray","2");
+    // d3.selectAll("g.yAxis g.tick")
+    //     .append("line")
+    //     .attr("class", "gridline")
+    //     .attr("x1", 0)
+    //     .attr("y1", 0)
+    //     .attr("x2", width)
+    //     .attr("y2", 0)
+    //     .attr("stroke", "#c5c5c5")
+    //     .attr("stroke-dasharray","2");
 
-    d3.selectAll("g.xAxis g.tick")
-        .append("line")
-        .attr("class", "gridline")
-        .attr("x1", 0)
-        .attr("y1", 0)
-        .attr("x2", 0)
-        .attr("y2", -height)
-        .attr("stroke", "#c5c5c5")
-        .attr("stroke-dasharray","2");
+    // d3.selectAll("g.xAxis g.tick")
+    //     .append("line")
+    //     .attr("class", "gridline")
+    //     .attr("x1", 0)
+    //     .attr("y1", 0)
+    //     .attr("x2", 0)
+    //     .attr("y2", -height)
+    //     .attr("stroke", "#c5c5c5")
+    //     .attr("stroke-dasharray","2");
 });
