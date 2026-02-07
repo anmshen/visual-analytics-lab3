@@ -153,14 +153,6 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
     // TODO: add tooltip here
     dots.on("mouseover", (event, d) => {
         console.log("Moused over a dot. \nEvent:", event, "D:", d)
-        // .append("div")
-        // .style("opacity", 0)
-        // .attr("class", "tooltip")
-        // .style("background-color", "white")
-        // .style("border", "solid")
-        // .style("border-width", "1px")
-        // .style("border-radius", "5px")
-        // .style("padding", "10px");
     });
 
     function draw_y_scatter (option) {
@@ -270,14 +262,6 @@ d3.csv("/iris.csv", d3.autoType).then(function (data) {
         .text(currentY);
 
     // TODO: Chart title
-    // svg_scatter
-    //     .append("text")
-    //     .attr("text-anchor", "middle")
-    //     .style("font-size", "16px")
-    //     .style("text-decoration", "underline")
-    //     .attr("x", margin.left + width / 3)
-    //     .text("Petal Length vs. Sepal Length");
-
     let scatterTitle = svg_scatter
         .append("text")
         .attr("class", "scatterTitle")
